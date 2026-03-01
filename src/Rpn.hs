@@ -6,8 +6,12 @@ module Rpn (
     Operator,
     Token,
     Stack,
+    UnexpectedToken,
+    pushToken,
     solve,
 ) where
+
+import qualified Control.Exception as E
 
 type Input = String
 type Output = Double
@@ -48,6 +52,31 @@ instance Read Token where
             pure (Op op, s')
 
 type Stack = [Double]
+
+newtype UnexpectedToken = UnexpectedToken Token
+
+instance Show UnexpectedToken where
+    showsPrec :: Int -> UnexpectedToken -> ShowS
+    showsPrec d (UnexpectedToken t) = showsPrec d e
+      where
+        e = "unexpected token " ++ show t
+
+instance E.Exception UnexpectedToken
+
+pushToken :: Stack -> Token -> IO Stack
+pushToken s (V v) = return $ s ++ [v]
+pushToken s t@(Op op) = do
+    (sInit, x, y) <- splitted
+    return $ sInit ++ [x `op'` y]
+  where
+    splitted = case reverse s of
+        (y : x : sInitRev) -> pure (reverse sInitRev, x, y)
+        _ -> E.throwIO $ UnexpectedToken t
+    op' = case op of
+        Add -> (+)
+        Sub -> (-)
+        Mul -> (*)
+        Div -> (/)
 
 -- TODO
 solve :: Input -> Output
