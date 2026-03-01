@@ -33,6 +33,12 @@ instance Read Operator where
     readsPrec _ ('/' : s) = [(Div, s)]
     readsPrec _ _ = []
 
+opFn :: Operator -> Double -> Double -> Double
+opFn Add = (+)
+opFn Sub = (-)
+opFn Mul = (*)
+opFn Div = (/)
+
 data Token = V Double | Op Operator
 
 instance Show Token where
@@ -67,16 +73,11 @@ pushToken :: Stack -> Token -> IO Stack
 pushToken s (V v) = return $ s ++ [v]
 pushToken s t@(Op op) = do
     (sInit, x, y) <- splitted
-    return $ sInit ++ [x `op'` y]
+    return $ sInit ++ [opFn op x y]
   where
     splitted = case reverse s of
         (y : x : sInitRev) -> pure (reverse sInitRev, x, y)
         _ -> E.throwIO $ UnexpectedToken t
-    op' = case op of
-        Add -> (+)
-        Sub -> (-)
-        Mul -> (*)
-        Div -> (/)
 
 -- TODO
 solve :: Input -> Output
