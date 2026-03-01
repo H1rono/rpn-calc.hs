@@ -8,10 +8,14 @@ module Rpn (
     Stack,
     UnexpectedToken,
     pushToken,
+    evalTokens,
+    scan,
     solve,
 ) where
 
 import qualified Control.Exception as E
+import Control.Monad (foldM)
+import Text.Read (readMaybe)
 
 type Input = String
 type Output = Double
@@ -69,6 +73,16 @@ instance Show UnexpectedToken where
 
 instance E.Exception UnexpectedToken
 
+newtype UnexpectedInput = UnexpectedInput String
+
+instance Show UnexpectedInput where
+    showsPrec :: Int -> UnexpectedInput -> ShowS
+    showsPrec d (UnexpectedInput i) = showsPrec d e
+      where
+        e = "unexpected input " ++ i
+
+instance E.Exception UnexpectedInput
+
 pushToken :: Stack -> Token -> IO Stack
 pushToken s (V v) = return $ s ++ [v]
 pushToken s t@(Op op) = do
@@ -78,6 +92,17 @@ pushToken s t@(Op op) = do
     splitted = case reverse s of
         (y : x : sInitRev) -> pure (reverse sInitRev, x, y)
         _ -> E.throwIO $ UnexpectedToken t
+
+evalTokens :: Stack -> [Token] -> IO Stack
+evalTokens = foldM pushToken
+
+scan :: Input -> IO [Token]
+scan input =
+    let ws = words input
+        parse w = case (readMaybe w :: Maybe Token) of
+            Just t -> return t
+            Nothing -> E.throwIO $ UnexpectedInput w
+     in traverse parse ws
 
 -- TODO
 solve :: Input -> Output
