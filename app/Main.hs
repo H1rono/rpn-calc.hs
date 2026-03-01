@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Lib
+import Rpn (solve)
 
 main :: IO ()
-main = someFunc
+main = print $ solve ""
