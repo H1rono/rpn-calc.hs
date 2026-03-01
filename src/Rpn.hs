@@ -7,6 +7,9 @@ module Rpn (
     Token,
     Stack,
     UnexpectedToken,
+    UnexpectedInput,
+    EmptyInput,
+    TooManyNumberInputs,
     pushToken,
     evalTokens,
     scan,
@@ -83,6 +86,22 @@ instance Show UnexpectedInput where
 
 instance E.Exception UnexpectedInput
 
+data EmptyInput = EmptyInput
+
+instance Show EmptyInput where
+    showsPrec :: Int -> EmptyInput -> ShowS
+    showsPrec d EmptyInput = showsPrec d "input is empty"
+
+instance E.Exception EmptyInput where
+
+data TooManyNumberInputs = TooManyNumberInputs
+
+instance Show TooManyNumberInputs where
+    showsPrec :: Int -> TooManyNumberInputs -> ShowS
+    showsPrec d TooManyNumberInputs = showsPrec d "too many number inputs"
+
+instance E.Exception TooManyNumberInputs where
+
 pushToken :: Stack -> Token -> IO Stack
 pushToken s (V v) = return $ s ++ [v]
 pushToken s t@(Op op) = do
@@ -104,6 +123,11 @@ scan input =
             Nothing -> E.throwIO $ UnexpectedInput w
      in traverse parse ws
 
--- TODO
-solve :: Input -> Output
-solve _ = 0.0
+solve :: Input -> IO Output
+solve input = do
+    tokens <- scan input
+    resultStack <- evalTokens [] tokens
+    case resultStack of
+        [] -> E.throwIO EmptyInput
+        (ans:[]) -> return ans
+        _ -> E.throwIO TooManyNumberInputs
